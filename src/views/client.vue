@@ -3,10 +3,10 @@
     <p class="panel-heading">Novo Cliente</p>
     <div class="panel-block">
       <section>
-        <b-field label="Razão Social" label-position="inside">
+        <b-field label="Razão Social" :type="has_error_name" label-position="inside">
           <b-input v-model="name" :value="name"></b-input>
         </b-field>
-        <b-field label="CNPJ" label-position="inside">
+        <b-field label="CNPJ" :type="has_error_cnpj" label-position="inside">
           <b-input v-model="cnpj" :value="cnpj"></b-input>
         </b-field>
         <div class="buttons">
@@ -15,7 +15,7 @@
           </b-button>
           <div class="label">Endereços</div>
         </div>
-        <b-field v-for="address in addresses" :key="address.id">
+        <b-field :type="has_error_addresses" v-for="address in addresses" :key="address.uid">
           <b-input v-model="address.value" :value="address.value"></b-input>
         </b-field>
         <div class="buttons">
@@ -24,7 +24,7 @@
           </b-button>
           <div class="label">Telefones</div>
         </div>
-        <b-field v-for="phone in phones" :key="phone.id">
+        <b-field :type="has_error_phones" v-for="phone in phones" :key="phone.uid">
           <b-input v-model="phone.value" :value="phone.value"></b-input>
         </b-field>
 
@@ -50,26 +50,48 @@ export default {
     return {
       name: "",
       cnpj: "",
-      addresses: [{ id: "a1", value: "" }],
-      phones: [{ id: "p1", value: "" }],
+      addresses: [{ uid: "a1", value: "" }],
+      phones: [{ uid: "p1", value: "" }],
+      errors: {},
       loading: false
     };
+  },
+  computed: {
+    has_error_name() {
+      return this.has_error('name')
+    },
+    has_error_cnpj() {
+      return this.has_error('cnpj')
+    },
+    has_error_addresses() {
+      return this.has_error('addresses.value')
+    },
+    has_error_phones() {
+      return this.has_error('phones.value')
+    }
   },
   methods: {
     addAddress() {
       return this.addresses.push({
-        id: `a${this.addresses.length + 1}`,
+        uid: `a${this.addresses.length + 1}`,
         value: ""
       });
     },
     addPhone() {
-      return this.phones.push({ id: `p${this.phones.length + 1}`, value: "" });
+      return this.phones.push({ uid: `p${this.phones.length + 1}`, value: "" });
     },
     clearForm() {
       this.name = "";
       this.cnpj = "";
-      this.addresses = [{ id: "a1", value: "" }];
-      this.phones = [{ id: "a1", value: "" }];
+      this.addresses = [{ uid: "a1", value: "" }];
+      this.phones = [{ uid: "a1", value: "" }];
+    },
+    has_error(field) {
+      if (this.errors[field]) {
+        return 'is-danger'
+      } else {
+        return ''
+      }
     },
     submit() {
       if (this.loading) return;
@@ -78,15 +100,15 @@ export default {
       const params = {
         name: this.name,
         cnpj: this.cnpj,
-        addresses: this.addresses,
-        phones: this.phones
+        addresses_attributes: this.addresses,
+        phones_attributes: this.phones
       };
 
-      HTTP.post(`posts`, params)
+      HTTP.post("clients", params)
         .then(response => {
           this.posts = response.data;
           this.loading = false;
-          // this.clearForm()
+          this.clearForm()
           this.$buefy.notification.open({
             message: "Cadastrado com sucesso",
             type: "is-success"
@@ -94,7 +116,7 @@ export default {
         })
         .catch(e => {
           this.loading = false;
-          this.errors.push(e);
+          this.errors = e.response.data;
 
           this.$buefy.notification.open({
             message: "Ocorreu um erro",
