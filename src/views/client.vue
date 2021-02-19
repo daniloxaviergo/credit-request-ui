@@ -3,7 +3,11 @@
     <p class="panel-heading">Novo Cliente</p>
     <div class="panel-block">
       <section>
-        <b-field label="Razão Social" :type="has_error_name" label-position="inside">
+        <b-field
+          label="Razão Social"
+          :type="has_error_name"
+          label-position="inside"
+        >
           <b-input v-model="name" :value="name"></b-input>
         </b-field>
         <b-field label="CNPJ" :type="has_error_cnpj" label-position="inside">
@@ -15,7 +19,11 @@
           </b-button>
           <div class="label">Endereços</div>
         </div>
-        <b-field :type="has_error_addresses" v-for="address in addresses" :key="address.uid">
+        <b-field
+          :type="has_error_addresses"
+          v-for="address in addresses"
+          :key="address.uid"
+        >
           <b-input v-model="address.value" :value="address.value"></b-input>
         </b-field>
         <div class="buttons">
@@ -24,7 +32,11 @@
           </b-button>
           <div class="label">Telefones</div>
         </div>
-        <b-field :type="has_error_phones" v-for="phone in phones" :key="phone.uid">
+        <b-field
+          :type="has_error_phones"
+          v-for="phone in phones"
+          :key="phone.uid"
+        >
           <b-input v-model="phone.value" :value="phone.value"></b-input>
         </b-field>
 
@@ -58,16 +70,16 @@ export default {
   },
   computed: {
     has_error_name() {
-      return this.has_error('name')
+      return this.has_error("name");
     },
     has_error_cnpj() {
-      return this.has_error('cnpj')
+      return this.has_error("cnpj");
     },
     has_error_addresses() {
-      return this.has_error('addresses.value')
+      return this.has_error("addresses.value");
     },
     has_error_phones() {
-      return this.has_error('phones.value')
+      return this.has_error("phones.value");
     }
   },
   methods: {
@@ -88,9 +100,9 @@ export default {
     },
     has_error(field) {
       if (this.errors[field]) {
-        return 'is-danger'
+        return "is-danger";
       } else {
-        return ''
+        return "";
       }
     },
     submit() {
@@ -105,10 +117,10 @@ export default {
       };
 
       HTTP.post("clients", params)
-        .then(response => {
-          this.posts = response.data;
+        .then(() => {
           this.loading = false;
-          this.clearForm()
+          this.errors = {};
+          this.clearForm();
           this.$buefy.notification.open({
             message: "Cadastrado com sucesso",
             type: "is-success"

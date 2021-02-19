@@ -3,7 +3,11 @@
     <p class="panel-heading">Solicitação de Crédito</p>
     <div class="panel-block">
       <section>
-        <b-field label="Cliente" label-position="inside">
+        <b-field
+          label="Cliente"
+          :type="has_error_client"
+          label-position="inside"
+        >
           <b-autocomplete
             :data="filteredDataArray"
             v-model="search_client"
@@ -16,7 +20,11 @@
           </b-autocomplete>
         </b-field>
 
-        <b-field label="Crédito" label-position="inside">
+        <b-field
+          label="Crédito"
+          :type="has_error_value"
+          label-position="inside"
+        >
           <b-input v-model="value" v-currency :value="value"></b-input>
         </b-field>
 
@@ -40,15 +48,10 @@ export default {
   name: "client",
   data: () => {
     return {
-      clients: [
-        { id: 1, name: "Joao - 823948238904" },
-        { id: 2, name: "Marcelo - 82322168" },
-        { id: 3, name: "Maria - 12365687" },
-        { id: 4, name: "Renata - 77898215" },
-        { id: 5, name: "Lucas - 6518980" }
-      ],
+      clients: [],
       client: null,
       value: "",
+      errors: {},
       search_client: "",
       loading: false
     };
@@ -63,6 +66,12 @@ export default {
             .indexOf(this.search_client.toLowerCase()) >= 0
         );
       });
+    },
+    has_error_client() {
+      return this.has_error("client");
+    },
+    has_error_value() {
+      return this.has_error("value");
     }
   },
   methods: {
@@ -74,20 +83,46 @@ export default {
       this.search_client = "";
       this.client = null;
     },
+    has_error(field) {
+      if (this.errors[field]) {
+        return "is-danger";
+      } else {
+        return "";
+      }
+    },
+    getClients() {
+      HTTP.get("clients")
+        .then(response => {
+          this.clients = response.data.map(client => {
+            return { id: client.id, name: `${client.name} - ${client.cnpj}` };
+          });
+        })
+        .catch(() => {
+          this.$buefy.notification.open({
+            message: "Ocorreu um erro ao carregar",
+            type: "is-danger"
+          });
+        });
+    },
     submit() {
       if (this.loading) return;
 
       this.loading = true;
       const params = {
-        client_id: this.client.id,
-        value: parseFloat(this.value.toString().replace("R$", ""))
+        client_id: this.client ? this.client.id : null,
+        value: parseFloat(
+          this.value
+            .toString()
+            .replace("R$", "")
+            .replace(",", "")
+        )
       };
 
-      HTTP.post(`posts`, params)
-        .then(response => {
-          this.posts = response.data;
+      HTTP.post("credits", params)
+        .then(() => {
           this.loading = false;
-          // this.clearForm()
+          this.errors = {};
+          this.clearForm();
           this.$buefy.notification.open({
             message: "Cadastrado com sucesso",
             type: "is-success"
@@ -95,7 +130,7 @@ export default {
         })
         .catch(e => {
           this.loading = false;
-          this.errors.push(e);
+          this.errors = e.response.data;
 
           this.$buefy.notification.open({
             message: "Ocorreu um erro",
@@ -103,6 +138,9 @@ export default {
           });
         });
     }
+  },
+  created() {
+    this.getClients();
   }
 };
 </script>
