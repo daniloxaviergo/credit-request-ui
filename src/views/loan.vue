@@ -3,7 +3,11 @@
     <p class="panel-heading">Solicitação de Empréstimo</p>
     <div class="panel-block">
       <section>
-        <b-field label="Cliente" label-position="inside">
+        <b-field
+          label="Cliente"
+          :type="has_error_client"
+          label-position="inside"
+        >
           <b-autocomplete
             :data="filteredDataArray"
             v-model="search_client"
@@ -16,7 +20,11 @@
           </b-autocomplete>
         </b-field>
 
-        <b-field label="Crédito" label-position="inside">
+        <b-field
+          label="Crédito"
+          :type="has_error_credit"
+          label-position="inside"
+        >
           <b-select v-model="credit_id">
             <option
               v-for="option in credits"
@@ -28,7 +36,15 @@
           </b-select>
         </b-field>
 
-        <b-field label="Parcelamento" label-position="inside">
+        <b-field label="Valor" :type="has_error_value" label-position="inside">
+          <b-input v-model="value" v-currency :value="value"></b-input>
+        </b-field>
+
+        <b-field
+          label="Parcelamento"
+          :type="has_error_subdivision"
+          label-position="inside"
+        >
           <b-input
             placeholder="12"
             v-model="subdivision"
@@ -36,7 +52,11 @@
           ></b-input>
         </b-field>
 
-        <b-field label="Juros" label-position="inside">
+        <b-field
+          label="Juros"
+          :type="has_error_interest"
+          label-position="inside"
+        >
           <b-input
             placeholder="1.5"
             v-model="interest"
@@ -44,7 +64,12 @@
           ></b-input>
         </b-field>
 
-        <b-table :data="loan" :striped="true" :hoverable="true">
+        <b-table
+          :data="installments"
+          :striped="true"
+          :hoverable="true"
+          v-if="show_table"
+        >
           <b-table-column
             field="id"
             label="Vencimento"
@@ -52,7 +77,7 @@
             date
             v-slot="props"
           >
-            {{ props.row.due_date }}
+            {{ props.row.payday }}
           </b-table-column>
 
           <b-table-column
@@ -64,6 +89,12 @@
           >
             {{ props.row.value }}
           </b-table-column>
+
+          <template #footer>
+            <div class="has-text-right">
+              {{ total }}
+            </div>
+          </template>
         </b-table>
 
         <div class="buttons">
@@ -87,26 +118,17 @@ export default {
   name: "client",
   data: () => {
     return {
-      clients: [
-        { id: 1, name: "Joao - 823948238904" },
-        { id: 2, name: "Marcelo - 82322168" },
-        { id: 3, name: "Maria - 12365687" },
-        { id: 4, name: "Renata - 77898215" },
-        { id: 5, name: "Lucas - 6518980" }
-      ],
+      clients: [],
       client: null,
       search_client: "",
       credit_id: null,
+      value: null,
       credits: [],
       subdivision: null,
       interest: null,
-      loan: [
-        { due_date: "2020-01-01", value: 1000 },
-        { due_date: "2020-01-01", value: 1000 },
-        { due_date: "2020-01-01", value: 1000 },
-        { due_date: "2020-01-01", value: 1000 },
-        { due_date: "2020-01-01", value: 1000 }
-      ],
+      errors: {},
+      total: 0,
+      installments: [],
       loading: false
     };
   },
@@ -120,22 +142,83 @@ export default {
             .indexOf(this.search_client.toLowerCase()) >= 0
         );
       });
+    },
+    has_error_client() {
+      return this.has_error("client");
+    },
+    has_error_credit() {
+      return this.has_error("credit_id");
+    },
+    has_error_value() {
+      return this.has_error("value");
+    },
+    has_error_subdivision() {
+      return this.has_error("subdivision");
+    },
+    has_error_interest() {
+      return this.has_error("interest");
+    },
+    show_table() {
+      return this.installments.length > 0;
     }
   },
   methods: {
     client_selected(option) {
       this.client = option;
 
-      // request credits
-      this.credits = [
-        { id: 1, created_at: "2021-01-01", value: 10000, remain: 10000 },
-        { id: 2, created_at: "2021-01-02", value: 10000, remain: 500 }
-      ];
+      this.getCredits();
+    },
+    has_error(field) {
+      if (this.errors[field]) {
+        return "is-danger";
+      } else {
+        return "";
+      }
+    },
+    getClients() {
+      HTTP.get("clients")
+        .then(response => {
+          this.clients = response.data.map(client => {
+            return { id: client.id, name: `${client.name} - ${client.cnpj}` };
+          });
+        })
+        .catch(() => {
+          this.$buefy.notification.open({
+            message: "Ocorreu um erro ao carregar",
+            type: "is-danger"
+          });
+        });
+    },
+    getCredits() {
+      const params = { client_id: this.client.id };
+
+      HTTP.get("credits", { params: params })
+        .then(response => {
+          this.credits = response.data.map(credit => {
+            return {
+              id: credit.id,
+              created_at: credit.created_at,
+              value: credit.value,
+              remain: credit.remain
+            };
+          });
+        })
+        .catch(() => {
+          this.$buefy.notification.open({
+            message: "Ocorreu um erro ao carregar",
+            type: "is-danger"
+          });
+        });
     },
     clearForm() {
       this.value = null;
       this.search_client = "";
       this.client = null;
+      this.credit_id = null;
+      this.installments = [];
+      this.total = 0;
+      this.subdivision = null;
+      this.interest = null;
     },
     submit(preview = false) {
       if (this.loading) return;
@@ -144,24 +227,38 @@ export default {
       const params = {
         client_id: this.client.id,
         credit_id: this.credit_id,
+        value: parseFloat(
+          this.value
+            .toString()
+            .replace("R$", "")
+            .replace(",", "")
+        ),
         subdivision: this.subdivision,
-        interest: this.interest,
+        interest: parseFloat(this.interest) / 100.0,
         preview: preview
       };
 
-      HTTP.post(`posts`, params)
+      HTTP.post("loans", params)
         .then(response => {
-          this.posts = response.data;
           this.loading = false;
-          // this.clearForm()
-          this.$buefy.notification.open({
-            message: "Cadastrado com sucesso",
-            type: "is-success"
-          });
+          this.errors = {};
+
+          if (!preview) {
+            this.clearForm();
+            this.$buefy.notification.open({
+              message: "Cadastrado com sucesso",
+              type: "is-success"
+            });
+          } else {
+            this.total = response.data.total;
+            this.installments = response.data.installments.map(installment => {
+              return { payday: installment.payday, value: installment.value };
+            });
+          }
         })
         .catch(e => {
           this.loading = false;
-          this.errors.push(e);
+          this.errors = e.response.data;
 
           this.$buefy.notification.open({
             message: "Ocorreu um erro",
@@ -169,6 +266,9 @@ export default {
           });
         });
     }
+  },
+  created() {
+    this.getClients();
   }
 };
 </script>
