@@ -20,11 +20,12 @@ export default {
 </script>
 
 <style type="text/css">
-  html, body {
-    background-color: #f7f7f7 !important;
-  }
+html,
+body {
+  background-color: #f7f7f7 !important;
+}
 
-  .panel-block {
-    background-color: #ffffff
-  }
+.panel-block {
+  background-color: #ffffff;
+}
 </style>
