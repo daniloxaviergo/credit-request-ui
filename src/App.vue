@@ -18,3 +18,13 @@ export default {
   components: { Navbar }
 };
 </script>
+
+<style type="text/css">
+  html, body {
+    background-color: #f7f7f7 !important;
+  }
+
+  .panel-block {
+    background-color: #ffffff
+  }
+</style>

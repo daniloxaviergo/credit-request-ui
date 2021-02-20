@@ -1,30 +1,20 @@
+# credit-request-ui
+
+Comandos para montar o ambiente
+
+```
+git clone git@github.com:daniloxaviergo/credit-request-ui.git
+cd credit-request-ui
+cp .env.sample .env
+```
+
+Defina as variáveis(.env)
+```
+CREDIT_REQUEST_API=????
+```
+
+Para montar a imagem do docker e subir o node na porta 3000
+```
 docker build . -t credit-request-ui
 docker container run -p 8080:8080 --rm -it -v "$(pwd)":/usr/src/app credit-request-ui npm run serve
-
-docker container run --rm -it -v "$(pwd)":/usr/src/app credit-request-ui bash
-
-
-# app
-
-## Project setup
 ```
-npm install
-```
-
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
