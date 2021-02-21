@@ -13,8 +13,8 @@ const pluginOptions = {
 };
 
 Vue.use(Buefy);
-Vue.use(VueAxios, axios);
 Vue.use(VueCurrencyInput, pluginOptions);
+Vue.use(VueAxios, axios);
 
 new Vue({
   router,
